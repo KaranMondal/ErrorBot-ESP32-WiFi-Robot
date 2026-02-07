@@ -1,6 +1,6 @@
-#define BLYNK_TEMPLATE_ID "TMPL3XiycQBeE"
+#define BLYNK_TEMPLATE_ID " "
 #define BLYNK_TEMPLATE_NAME "Rc Car"
-#define BLYNK_AUTH_TOKEN "Hez0c9EfMX_tvWtbTaByS7vy_QOJbL1f"
+#define BLYNK_AUTH_TOKEN " "
 
 #define BLYNK_PRINT Serial
 
@@ -12,7 +12,7 @@
 
 // -------- WiFi Credentials --------
 char ssid[] = "Aayein :]";
-char pass[] = "KakoliNo1";
+char pass[] = "  ";
 
 // -------- Motor Pins (ONLY Channel A used) --------
 #define IN1 26
