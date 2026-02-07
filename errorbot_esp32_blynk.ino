@@ -1,6 +1,6 @@
 #define BLYNK_TEMPLATE_ID " "
-#define BLYNK_TEMPLATE_NAME "Rc Car"
-#define BLYNK_AUTH_TOKEN " "
+#define BLYNK_TEMPLATE_NAME "ErrorBot"
+#define BLYNK_AUTH_TOKEN "YOUR_BLYNK_TOKEN"
 
 #define BLYNK_PRINT Serial
 
@@ -11,15 +11,14 @@
 #include <Adafruit_SSD1306.h>
 
 // -------- WiFi Credentials --------
-char ssid[] = "Aayein :]";
-char pass[] = "  ";
+char ssid[] = " ";
+char pass[] = " ";
 
-// -------- Motor Pins (ONLY Channel A used) --------
+// -------- Motor Pins (Single Channel) --------
 #define IN1 26
 #define IN2 27
-// IN3 & IN4 NOT USED (damaged channel)
 
-// -------- Physical 1-Way Switch --------
+// -------- Physical Safety Switch --------
 #define SWITCH_PIN 33   // switch between GPIO33 and GND
 bool robotEnabled = false;
 
@@ -28,73 +27,80 @@ bool robotEnabled = false;
 #define SCREEN_HEIGHT 64
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-// -------- OLED Faces --------
-void drawHappyFace() {
+// -------- Robot State --------
+enum RobotState { IDLE, FORWARD, BACKWARD };
+RobotState currentState = IDLE;
+
+// -------- OLED UI FUNCTIONS --------
+void drawHeader(const char* title) {
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println(title);
+  display.drawLine(0, 10, 128, 10, WHITE);
+}
+
+void drawStatus(const char* status) {
+  display.setTextSize(1);
+  display.setCursor(0, 14);
+  display.print("Status: ");
+  display.println(status);
+}
+
+void drawFace(bool happy) {
+  display.drawCircle(96, 40, 12, WHITE);
+  if (happy) {
+    display.fillCircle(92, 36, 2, WHITE);
+    display.fillCircle(100, 36, 2, WHITE);
+    display.drawLine(92, 44, 100, 44, WHITE);
+  } else {
+    display.drawLine(90, 36, 94, 36, WHITE);
+    display.drawLine(98, 36, 102, 36, WHITE);
+  }
+}
+
+void updateOLED(const char* motionText) {
   display.clearDisplay();
-  display.drawCircle(64, 32, 20, WHITE);
-  display.fillCircle(56, 26, 3, WHITE);
-  display.fillCircle(72, 26, 3, WHITE);
-  display.drawLine(56, 38, 72, 38, WHITE); // smile
+  drawHeader("ErrorBot");
+  drawStatus(robotEnabled ? "ENABLED" : "DISABLED");
+
+  display.setCursor(0, 28);
+  display.print("Motion: ");
+  display.println(motionText);
+
+  drawFace(robotEnabled);
   display.display();
 }
 
-void drawSleepFace() {
-  display.clearDisplay();
-  display.drawCircle(64, 32, 20, WHITE);
-  display.drawLine(54, 26, 58, 26, WHITE);
-  display.drawLine(70, 26, 74, 26, WHITE);
-  display.display();
-}
-
-// -------- Motor Functions --------
+// -------- MOTOR FUNCTIONS --------
 void stopRobot() {
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, LOW);
-
-  if (robotEnabled) {
-    drawHappyFace();   // idle but enabled
-  } else {
-    drawSleepFace();   // disabled
-  }
+  currentState = IDLE;
+  updateOLED("IDLE");
 }
 
 void forward() {
   if (!robotEnabled) return;
-
   digitalWrite(IN1, HIGH);
   digitalWrite(IN2, LOW);
-
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("FORWARD");
-  display.display();
+  currentState = FORWARD;
+  updateOLED("FORWARD");
 }
 
 void backward() {
   if (!robotEnabled) return;
-
   digitalWrite(IN1, LOW);
   digitalWrite(IN2, HIGH);
-
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("BACKWARD");
-  display.display();
+  currentState = BACKWARD;
+  updateOLED("BACKWARD");
 }
 
-// -------- Physical Switch Check --------
+// -------- SWITCH CHECK --------
 void checkSwitch() {
-  // INPUT_PULLUP logic:
-  // LOW  = switch ON
-  // HIGH = switch OFF
   if (digitalRead(SWITCH_PIN) == LOW) {
     if (!robotEnabled) {
       robotEnabled = true;
-      drawHappyFace();
+      updateOLED("IDLE");
     }
   } else {
     if (robotEnabled) {
@@ -104,43 +110,45 @@ void checkSwitch() {
   }
 }
 
-// -------- Blynk Buttons --------
-BLYNK_WRITE(V1) { param.asInt() ? forward()  : stopRobot(); }
+// -------- BLYNK CONTROLS --------
+BLYNK_WRITE(V1) { param.asInt() ? forward() : stopRobot(); }
 BLYNK_WRITE(V2) { param.asInt() ? backward() : stopRobot(); }
 
-// Optional Blynk ON/OFF button
 BLYNK_WRITE(V4) {
   robotEnabled = param.asInt();
   stopRobot();
 }
 
+// -------- SETUP --------
 void setup() {
   Serial.begin(9600);
 
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
-
   pinMode(SWITCH_PIN, INPUT_PULLUP);
 
-  // OLED Init
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-  display.setTextSize(2);
-  display.setTextColor(WHITE);
   display.clearDisplay();
-  display.setCursor(0, 0);
-  display.println("Connecting");
+  display.setTextColor(WHITE);
+
+  display.setTextSize(2);
+  display.setCursor(10, 20);
+  display.println("ErrorBot");
+  display.display();
+  delay(1500);
+
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 25);
+  display.println("Connecting WiFi...");
   display.display();
 
   Blynk.begin(BLYNK_AUTH_TOKEN, ssid, pass);
 
-  display.clearDisplay();
-  display.println("Connected");
-  display.display();
-
-  delay(1000);
-  drawSleepFace(); // default state
+  updateOLED("IDLE");
 }
 
+// -------- LOOP --------
 void loop() {
   Blynk.run();
   checkSwitch();
