@@ -1,0 +1,25 @@
+# ErrorBot – Hardware Connections
+
+## ESP32 to L298N
+- IN1 → GPIO 26  
+- IN2 → GPIO 27  
+- ENA → 5V (jumper enabled)  
+- GND → GND  
+
+> Only Channel A is used due to Channel B failure.
+
+## OLED Display (I2C)
+- VCC → 3.3V  
+- GND → GND  
+- SDA → GPIO 21  
+- SCL → GPIO 22  
+
+## Physical Safety Switch
+- One terminal → GPIO 33  
+- Other terminal → GND  
+- Configured using INPUT_PULLUP  
+
+## Power Supply
+- ESP32 powered via USB  
+- Motors powered using battery pack  
+- Common ground maintained
